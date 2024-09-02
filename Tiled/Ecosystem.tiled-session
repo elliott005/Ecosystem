@@ -1,0 +1,88 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "base.tmx",
+    "expandedProjectPaths": [
+        "Tilesets",
+        "Templates",
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 5.5
+        },
+        "Tilesets/Grass.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 3,
+            "scaleInEditor": 5.5
+        },
+        "Tilesets/Hills.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 2,
+            "scaleInEditor": 5.5
+        },
+        "Tilesets/Water+.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 4
+        },
+        "Tilesets/Water.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 5.5
+        },
+        "Tilesets/test.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "base.tmx": {
+            "scale": 0.75,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 603.3333333333334,
+                "y": 405.33333333333326
+            }
+        },
+        "base.tmx#Grass": {
+            "scaleInDock": 3,
+            "scaleInEditor": 5.5
+        },
+        "base.tmx#Hills": {
+            "scaleInDock": 1
+        },
+        "base.tmx#Water+": {
+            "scaleInDock": 1
+        }
+    },
+    "frame.defaultDuration": 200,
+    "last.exportedFilePath": "/home/elliott/Documents/lua/Ecosystem/Tiled/Exports",
+    "last.imagePath": "/home/elliott/Documents/lua/Ecosystem/assets",
+    "last.objectTemplatePath": "/home/elliott/Documents/lua/Ecosystem/Tiled/Templates",
+    "map.lastUsedExportFilter": "All Files (*)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 16,
+    "map.tileWidth": 16,
+    "openFiles": [
+        "base.tmx"
+    ],
+    "project": "Ecosystem.tiled-project",
+    "recentFiles": [
+        "base.tmx",
+        "Tilesets/Grass.tsx",
+        "Tilesets/Water+.tsx",
+        "Tilesets/Water.tsx",
+        "Tilesets/Hills.tsx",
+        "Tilesets/test.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 16,
+        "width": 16
+    },
+    "tileset.transparentColor": "#000000",
+    "tileset.type": 0,
+    "tileset.useTransparentColor": true
+}
