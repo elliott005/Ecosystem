@@ -56,6 +56,8 @@ function Player:keypressed(key, scancode, isrepeat)
         self.gameSpeedFactor = math.max(self.gameSpeedFactor - 0.1, 0)
     elseif key == "right" then
         self.gameSpeedFactor = self.gameSpeedFactor + 0.1
+    elseif key == "space" then
+        debugMode = not debugMode
     end
 end
 
