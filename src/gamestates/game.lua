@@ -11,7 +11,7 @@ function game:enter()
     lume.remove(animalTypes, "AnimalBase")
 
     require "src/levels/loadMap"
-    loadMap("Tiled/Exports/base.lua")
+    loadMap("Tiled/Exports/base_smaller.lua")
 
     player = Player(0, 0)
 
@@ -27,7 +27,7 @@ function game:enter()
     }
     animals = {}
     -- world:update(0.1)
-    while #animals < 40 do
+    while #animals < 10 do
         local animalType = lume.weightedchoice(animalClassesProbabilities)
         local pos = vector(lume.random(20, gameMap.width * gameMap.tilewidth - 20), lume.random(20, gameMap.height * gameMap.tileheight - 20))
         if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
