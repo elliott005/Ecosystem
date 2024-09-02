@@ -56,8 +56,6 @@ function Player:keypressed(key, scancode, isrepeat)
         self.gameSpeedFactor = math.max(self.gameSpeedFactor - 0.1, 0)
     elseif key == "right" then
         self.gameSpeedFactor = self.gameSpeedFactor + 0.1
-    elseif key == "space" then
-        debugMode = not debugMode
     end
 end
 
@@ -88,5 +86,7 @@ function Player:mousepressed(x, y, button, istouch, presses)
             end
         end
         self.selectedAnimal = closest
+    elseif button == 3 then
+        debugMode = not debugMode
     end
 end
