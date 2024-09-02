@@ -57,9 +57,9 @@ function AnimalBase:init(x, y)
         checkIfCloser = Timer.new()
     }
     self.checkedPath = false
-    self.checkPathAfter = 0.4
+    self.checkPathAfter = 0.3
     self.checkedIfCloser = false
-    self.checkIfCloserAfter = 0.3
+    self.checkIfCloserAfter = 0.2
 
     self.debugMessage = ""
 end

@@ -160,7 +160,7 @@ function game:wheelmoved(x, y)
 end
 
 function game:quit()
-    print(lume.round(FPStotal / frameCount, 0.01))
+    -- print(lume.round(FPStotal / frameCount, 0.01))
 end
 
 return game

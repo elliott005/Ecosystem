@@ -3,13 +3,13 @@ walls = {}
 function loadMap(mapName)
     gameMap = sti(mapName)
 
-    world:addCollisionClass("BlocksLOS", {ignores={"All"}})
+    world:addCollisionClass("BlocksLOS")
     loadLayer("Cliffs", "BlocksLOS")
 
-    world:addCollisionClass("Water", {ignores={"All"}})
+    world:addCollisionClass("Water")
     loadLayer("Water")
 
-    world:addCollisionClass("Grass", {ignores={"All"}}) -- ignores=animalTypes
+    world:addCollisionClass("Grass", {ignores=animalTypes}) -- ignores=animalTypes
     loadLayer("Grass")
 end
 

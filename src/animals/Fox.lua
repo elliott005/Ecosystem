@@ -1,6 +1,6 @@
 Fox = Class{}
 
-world:addCollisionClass("Fox", {ignores={"All"}})
+world:addCollisionClass("Fox")
 
 function Fox:init(x, y)
     self:include(AnimalBase)
