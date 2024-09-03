@@ -1,3 +1,4 @@
+Still in VERY early stages, and toned down a bit to perform better in the browser.  
 Try it out in your browser here: https://elliott005.github.io/Ecosystem/  
 Controls:  
 <ul>
