@@ -7,3 +7,4 @@ Controls:
   <li>scroll wheel: zoom in/out; </li>
   <li>middle mouse button: toggle debug mode</li>
 </ul>
+If an update to this repo does not seem to change anything, try to clear your browser cache, as this can overwrite the new version with an old one.
