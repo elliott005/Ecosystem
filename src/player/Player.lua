@@ -5,6 +5,13 @@ function Player:init(x, y)
     self.selectedAnimal = false
 
     self.gameSpeedFactor = 1
+
+    x, y, flags = love.window.getMode()
+    self.buttons = {
+        {x=0, y=y-50, width=75, height=50, text="KILL", color={1, 1, 0}, animal=true, func=self.killSelectedAnimal},
+        {x=75, y=y-50, width=100, height=50, text="HEAL", color={1, 1, 0}, animal=true, func=self.healSelectedAnimal},
+        {x=x-100, y=y-50, width=100, height=50, text="QUIT", color={1, 1, 1}, animal=false, func=self.quitGame},
+    }
 end
 
 function Player:update(dt)
@@ -48,6 +55,15 @@ function Player:drawHud()
     love.graphics.print("FPS: " .. love.timer.getFPS(), width - 300, 0, 0, 2, 2)
     love.graphics.print("game speed: " .. (self.gameSpeedFactor * 100) .. "%", width - 300, 32, 0, 2, 2)
     love.graphics.print("animal count: " .. #animals, width - 300, 64, 0, 2, 2)
+
+    for i, button in ipairs(self.buttons) do
+        if not (not self.selectedAnimal and button.animal) then
+            love.graphics.setColor(button.color)
+            love.graphics.rectangle("line", button.x, button.y, button.width, button.height)
+            love.graphics.print(button.text, button.x, button.y, 0, 2, 2)
+        end
+    end
+
     love.graphics.setColor(1, 1, 1)
 end
 
@@ -72,7 +88,16 @@ function Player:wheelmoved(p_x, p_y)
 end
 
 function Player:mousepressed(x, y, button, istouch, presses)
-    if button == 2 then
+    if button == 1 then
+        for i, button in ipairs(self.buttons) do
+            if not (not self.selectedAnimal and button.animal) then
+                if pointIsInsideRect(x, y, button.x, button.y, button.width, button.height) then
+                    button.func(self)
+                    break
+                end
+            end
+        end
+    elseif button == 2 then
         worldX, worldY = self.camera:worldCoords(x, y)
         -- Modify windfield to detect circles with queries
         local colliders = world:queryCircleArea(worldX, worldY, 10, animalTypes)
@@ -89,4 +114,18 @@ function Player:mousepressed(x, y, button, istouch, presses)
     elseif button == 3 then
         debugMode = not debugMode
     end
+end
+
+function Player:killSelectedAnimal()
+    self.selectedAnimal:die()
+end
+function Player:healSelectedAnimal()
+    self.selectedAnimal:heal()
+end
+function Player:quitGame()
+    love.event.quit()
+end
+
+function pointIsInsideRect(pointX, pointY, x, y, w, h)
+    return x < pointX and pointX < x + w and y < pointY and pointY < y + h
 end

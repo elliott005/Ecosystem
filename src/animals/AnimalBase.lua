@@ -177,6 +177,11 @@ function AnimalBase:die()
         animal.id = i
     end
 end
+function AnimalBase:heal()
+    self.thirst = self.thirstMax
+    self.hunger = self.hungerMax
+    self.reproductiveUrge = self.reproductiveUrgeMax
+end
 
 function AnimalBase:idle()
     self.animation = "idle"
