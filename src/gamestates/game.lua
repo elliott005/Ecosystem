@@ -3,7 +3,7 @@ local game = {}
 function game:enter()
     require "src/player/Player"
 
-    notTheseAnimals = {"Cat", "Fox"}
+    notTheseAnimals = {"Cat"}
 
     animalTypes = {}
     for i, v in ipairs(love.filesystem.getDirectoryItems("src/animals")) do
