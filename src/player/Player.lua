@@ -14,6 +14,8 @@ function Player:init(x, y)
     }
 
     self.showAverageGenes = false
+
+    self.graphSize = 100
 end
 
 function Player:update(dt)
@@ -37,11 +39,12 @@ function Player:draw()
     if self.showAverageGenes then
         love.graphics.setColor(1, 0, 0)
         for i, v in ipairs(self.graphAnimalTypes) do
-            love.graphics.print(v, (i - 1) * 100, -100)
+            love.graphics.print(v, (i - 1) * self.graphSize, -self.graphSize)
         end
         for i, v in ipairs(self.graphGeneNames) do
-            love.graphics.print(v, -100, i * 100)
+            love.graphics.print(v .. ":", -self.graphSize, i * self.graphSize - self.graphSize / 2)
         end
+        love.graphics.print("Population:", -self.graphSize, -self.graphSize / 2)
         fpsGraph.drawGraphs(self.graphs)
     end
 end
@@ -155,7 +158,7 @@ function Player:calculateGenesGraphs()
     local i = 1
     local len = 0
     for animalType, animalGroup in pairs(averageGenesOverTime) do
-        table.insert(self.graphs, fpsGraph.createGraph(y * 100, -100, 100, 100, 1))
+        table.insert(self.graphs, fpsGraph.createGraph(y * self.graphSize, -self.graphSize, self.graphSize, self.graphSize, 1))
         len = len + 1
         for i, v in ipairs(animalPopulationOverTime[animalType]) do
             fpsGraph.updateGraph(self.graphs[#self.graphs], v, "", 1)
@@ -166,7 +169,7 @@ function Player:calculateGenesGraphs()
             local x = 1
             for k, gene in pairs(genes) do
                 if not createdGraph then
-                    table.insert(self.graphs, fpsGraph.createGraph(y * 100, (x - 1) * 100, 100, 100, 1))
+                    table.insert(self.graphs, fpsGraph.createGraph(y * self.graphSize, (x - 1) * self.graphSize, self.graphSize, self.graphSize, 1))
                 end
                 if not createdGeneNames then
                     table.insert(self.graphGeneNames, k)

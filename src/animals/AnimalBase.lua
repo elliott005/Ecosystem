@@ -153,7 +153,7 @@ function AnimalBase:setVariables(genes)
     else
         self.genes = {
             speedMultiplier = math.max(0, 1 + lume.random(-self.mutationAmount, self.mutationAmount)),
-            attractiveness = math.max(0, 0.7 + lume.random(-self.mutationAmount, self.mutationAmount)),
+            attractiveness = math.max(0, 0.5 + lume.random(-self.mutationAmount, self.mutationAmount)),
             gestationMultiplier = math.max(0, 1 + lume.random(-self.mutationAmount, self.mutationAmount))
         }
     end
@@ -451,6 +451,7 @@ function AnimalBase:reproduction()
                 genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
             end
         end
+        genes["attractiveness"] = self.genes.attractiveness
         for k, v in pairs(obj.genes) do
             if not genes[k] then
                 genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
@@ -476,7 +477,7 @@ function AnimalBase:giveBirth()
         for _=1, 5 do
             local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
             if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
-                table.insert(animals, animalClasses[self.animalType](pos.x, pos.y, self.childGenes))
+                table.insert(animals, animalClasses[self.animalType](pos.x, pos.y, self.childGenes, true))
                 break
             end
         end

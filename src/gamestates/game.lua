@@ -3,32 +3,44 @@ local game = {}
 function game:enter()
     require "src/player/Player"
 
+    notTheseAnimals = {"Cat", "Fox"}
+
     animalTypes = {}
     for i, v in ipairs(love.filesystem.getDirectoryItems("src/animals")) do
         require("src/animals/" .. v:sub(1, -5))
         table.insert(animalTypes, v:sub(1, -5))
     end
     lume.remove(animalTypes, "AnimalBase")
-    lume.remove(animalTypes, "Cat")
+    for i, v in ipairs(notTheseAnimals) do
+        lume.remove(animalTypes, v)
+    end
 
     require "src/levels/loadMap"
-    loadMap("Tiled/Exports/base.lua")
+    local pathToMap = "Tiled/Exports/base_medium.lua"
+    local numAnimals = 30
+    loadMap(pathToMap)
 
     player = Player(0, 0)
 
     animalClasses = {
         ["Fox"] = Fox,
-        --["Cat"] = Cat,
+        ["Cat"] = Cat,
         ["Chicken"] = Chicken
     }
+    for i, v in ipairs(notTheseAnimals) do
+        animalClasses[v] = nil
+    end
     animalClassesProbabilities = {
         ["Fox"] = 2,
-        --["Cat"] = 2,
+        ["Cat"] = 2,
         ["Chicken"] = 4
     }
+    for i, v in ipairs(notTheseAnimals) do
+        animalClassesProbabilities[v] = nil
+    end
     animals = {}
     -- world:update(0.1)
-    while #animals < 50 do
+    while #animals < numAnimals do
         local animalType = lume.weightedchoice(animalClassesProbabilities)
         local pos = vector(lume.random(20, gameMap.width * gameMap.tilewidth - 20), lume.random(20, gameMap.height * gameMap.tileheight - 20))
         if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then

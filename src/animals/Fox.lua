@@ -7,13 +7,13 @@ function Fox:init(x, y)
     AnimalBase.init(self, x, y)
 
     self.size = 32
-    self.hungerMax = 35.0
+    self.hungerMax = 40.0
     self.thirstMax = 25.0
     self.hungerThreshold = 25.0
     self.thirstThreshold = 20.0
-    self.searchRadius = 128
+    self.searchRadius = 160
     self.targetReachedRadius = 25
-    self.wanderRadius = 96
+    self.wanderRadius = 128
     self.speed = 32
     self.animalType = "Fox"
     self.prey = {"Chicken"}
