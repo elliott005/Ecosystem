@@ -8,11 +8,11 @@ function Chicken:init(x, y)
 
     self.size = 32
     self.spriteScale = 0.5
-    self.hungerMax = 40.0
-    self.thirstMax = 30.0
+    self.hungerMax = 20.0
+    self.thirstMax = 15.0
     self.repruductiveUrgeMax = 10.0
-    self.hungerThreshold = 30.0
-    self.thirstThreshold = 25.0
+    self.hungerThreshold = 15.0
+    self.thirstThreshold = 12.0
     self.searchRadius = 128
     self.targetReachedRadius = 20
     self.wanderRadius = 96

@@ -7,10 +7,10 @@ function Fox:init(x, y)
     AnimalBase.init(self, x, y)
 
     self.size = 32
-    self.hungerMax = 45.0
-    self.thirstMax = 30.0
-    self.hungerThreshold = 35.0
-    self.thirstThreshold = 25.0
+    self.hungerMax = 35.0
+    self.thirstMax = 25.0
+    self.hungerThreshold = 25.0
+    self.thirstThreshold = 20.0
     self.searchRadius = 128
     self.targetReachedRadius = 25
     self.wanderRadius = 96

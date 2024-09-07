@@ -14,6 +14,7 @@ function gameStart()
     sti = require("libraries/Simple-Tiled-Implementation/sti")
     windfield = require "libraries/windfield"
     lume = require "libraries/lume"
+    fpsGraph = require "libraries/FPSGraph"
 
     world = windfield.newWorld(0, 0, true)
 

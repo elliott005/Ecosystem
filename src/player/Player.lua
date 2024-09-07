@@ -12,6 +12,8 @@ function Player:init(x, y)
         {x=75, y=y-50, width=100, height=50, text="HEAL", color={1, 1, 0}, animal=true, func=self.healSelectedAnimal},
         {x=x-100, y=y-50, width=100, height=50, text="QUIT", color={1, 1, 1}, animal=false, func=self.quitGame},
     }
+
+    self.showAverageGenes = false
 end
 
 function Player:update(dt)
@@ -31,6 +33,16 @@ function Player:draw()
             love.graphics.line(self.selectedAnimal.position.x, self.selectedAnimal.position.y, self.selectedAnimal.target.x, self.selectedAnimal.target.y)
             love.graphics.setColor(1, 1, 1)
         end
+    end
+    if self.showAverageGenes then
+        love.graphics.setColor(1, 0, 0)
+        for i, v in ipairs(self.graphAnimalTypes) do
+            love.graphics.print(v, (i - 1) * 100, -100)
+        end
+        for i, v in ipairs(self.graphGeneNames) do
+            love.graphics.print(v, -100, i * 100)
+        end
+        fpsGraph.drawGraphs(self.graphs)
     end
 end
 
@@ -72,6 +84,14 @@ function Player:keypressed(key, scancode, isrepeat)
         self.gameSpeedFactor = math.max(self.gameSpeedFactor - 0.1, 0)
     elseif key == "right" then
         self.gameSpeedFactor = self.gameSpeedFactor + 0.1
+    elseif key == "space" then
+        self.showAverageGenes = not self.showAverageGenes
+        if self.showAverageGenes then
+            self:calculateGenesGraphs()
+            self.selectedAnimal = false
+        end
+    elseif key == "escape" then
+        love.event.quit()
     end
 end
 
@@ -124,6 +144,41 @@ function Player:healSelectedAnimal()
 end
 function Player:quitGame()
     love.event.quit()
+end
+
+function Player:calculateGenesGraphs()
+    self.graphs = {}
+    self.graphAnimalTypes = {}
+    self.graphGeneNames = {}
+    local createdGeneNames = false
+    local y = 0
+    local i = 1
+    local len = 0
+    for animalType, animalGroup in pairs(averageGenesOverTime) do
+        table.insert(self.graphs, fpsGraph.createGraph(y * 100, -100, 100, 100, 1))
+        len = len + 1
+        for i, v in ipairs(animalPopulationOverTime[animalType]) do
+            fpsGraph.updateGraph(self.graphs[#self.graphs], v, "", 1)
+        end
+        self.graphAnimalTypes[y + 1] = animalType
+        local createdGraph = false
+        for time, genes in ipairs(animalGroup) do
+            local x = 1
+            for k, gene in pairs(genes) do
+                if not createdGraph then
+                    table.insert(self.graphs, fpsGraph.createGraph(y * 100, (x - 1) * 100, 100, 100, 1))
+                end
+                if not createdGeneNames then
+                    table.insert(self.graphGeneNames, k)
+                end
+                fpsGraph.updateGraph(self.graphs[len + x + y * lume.count(genes)], gene * 10, "", 1)
+                x = x + 1
+            end
+            createdGeneNames = true
+            createdGraph = true
+        end
+        y = y + 1
+    end
 end
 
 function pointIsInsideRect(pointX, pointY, x, y, w, h)

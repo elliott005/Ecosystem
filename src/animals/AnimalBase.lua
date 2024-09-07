@@ -6,15 +6,19 @@ spritesheets = {
     ["Chicken"] = love.graphics.newImage("assets/chicken.png")
 }
 
-function AnimalBase:init(x, y)
+function AnimalBase:init(x, y, baby)
     self.position = vector(x, y)
+    self.baby = false
+    if baby then
+        self.baby = baby
+    end
 
     -- variables to be modified inside of subclass
     self.size = 32
     self.spriteScale = 1
     self.hungerMax = 20.0
     self.thirstMax = 20.0
-    self.reproductiveUrgeMax = 30
+    self.reproductiveUrgeMax = 20.0
     self.thirstThreshold = 15.0
     self.hungerThreshold = 10.0
     self.searchRadius = 128
@@ -25,8 +29,11 @@ function AnimalBase:init(x, y)
     self.prey = {}
     self.predators = {}
     self.sprintSpeed = 45
-    self.maxBabies = 3
-    
+    self.maxBabies = 5
+    self.gestationTime = 7
+    self.growUpTime = 5
+
+    self.mutationAmount = 0.5
 
     self.id = #animals + 1
 
@@ -54,8 +61,11 @@ function AnimalBase:init(x, y)
         death = Timer.new(),
         drink = Timer.new(),
         checkPath = Timer.new(),
-        checkIfCloser = Timer.new()
+        checkIfCloser = Timer.new(),
+        gestation = Timer.new(),
+        baby = Timer.new()
     }
+
     self.checkedPath = false
     self.checkPathAfter = 0.3
     self.checkedIfCloser = false
@@ -103,7 +113,11 @@ function AnimalBase:draw()
         love.graphics.setColor(0.9, 0.2, 0.2)
     end
     local pos = (self.position + vector(self.offsetX, self.offsetY))
-    self.animations[self.animation]:draw(self.spritesheet, pos.x, pos.y, 0, self.spriteScale, self.spriteScale)
+    local scale = self.spriteScale
+    if self.baby then
+        scale = scale / 2
+    end
+    self.animations[self.animation]:draw(self.spritesheet, pos.x, pos.y, 0, scale, scale)
     if debugMode and not self.dead then
         --[[ if self.debugSpritesheet then
             love.graphics.draw(self.debugSpritesheet, (self.position + vector(self.offsetX, self.offsetY)):unpack())
@@ -133,7 +147,23 @@ function AnimalBase:setCollision(collisionClass, sizeMultiplier)
     self.collider:setLinearVelocity(0, 0)
 end
 
-function AnimalBase:setVariables()
+function AnimalBase:setVariables(genes)
+    if genes then
+        self.genes = genes
+    else
+        self.genes = {
+            speedMultiplier = math.max(0, 1 + lume.random(-self.mutationAmount, self.mutationAmount)),
+            attractiveness = math.max(0, 0.7 + lume.random(-self.mutationAmount, self.mutationAmount)),
+            gestationMultiplier = math.max(0, 1 + lume.random(-self.mutationAmount, self.mutationAmount))
+        }
+    end
+
+    if self.baby then
+        self.timers.baby:after(self.growUpTime / self.genes.gestationMultiplier, function(self)
+            self.baby = false
+        end, self)
+    end
+
     self.offsetX = -self.size / 2
     self.offsetY = -self.size / 1.4
 
@@ -142,14 +172,17 @@ function AnimalBase:setVariables()
     self.hunger = self.hungerMax + lume.random(-2, 2)
     self.thirst = self.thirstMax + lume.random(-2, 2)
     self.reproductiveUrge = self.reproductiveUrgeMax + lume.random(-5, 5)
+
+    self.speed = self.speed * self.genes.speedMultiplier
+    self.gestationTime = self.gestationTime * self.genes.gestationMultiplier
 end
 
 function AnimalBase:updateStatus(dt)
     self.position.x = self.collider:getX()
     self.position.y = self.collider:getY()
 
-    self.hunger = self.hunger - dt
-    self.thirst = self.thirst - dt
+    self.hunger = self.hunger - dt / self.genes.speedMultiplier
+    self.thirst = self.thirst - dt / self.genes.speedMultiplier
     self.reproductiveUrge = self.reproductiveUrge - dt
     -- print(self.thirst)
 
@@ -232,6 +265,7 @@ function AnimalBase:move(switchTo)
             --[[ if profiling and self.id == 1 then
                 prof.push("check path")
             end ]]
+            if self.dead then return end
             self.checkedPath = false
             self:checkPath()
             --[[ if profiling and self.id == 1 then
@@ -251,6 +285,9 @@ function AnimalBase:move(switchTo)
     if self.fleeing then
         speed = self.sprintSpeed
     end
+    if self.baby then
+        speed = speed / 2
+    end
     self.collider:setLinearVelocity((dir * speed):unpack())
     self.animations[self.animation].flippedH = dir.x < 0.0
     if self.position == self.target or self.position:dist(self.target) <= self.targetReachedRadius then
@@ -262,6 +299,7 @@ function AnimalBase:move(switchTo)
             self.timers.checkIfCloser:after(self.checkIfCloserAfter, function(self)
                 self.checkedIfCloser = false
                 if self.targetGoal ~= "drinking" then return end
+                if self.dead then return end
                 local closestWater = self:searchForWater()
                 if closestWater then
                     if not (closestWater:getX() == self.target.x and closestWater:getY() == self.target.y) then
@@ -279,6 +317,7 @@ function AnimalBase:move(switchTo)
             self.timers.checkIfCloser:after(self.checkIfCloserAfter, function(self)
                 self.checkedIfCloser = false
                 if self.targetGoal ~= "eating" then return end
+                if self.dead then return end
                 local closestFood = self:searchForFood()
                 if closestFood then
                     if not (closestFood:getX() == self.target.x and closestFood:getY() == self.target.y) then
@@ -379,6 +418,7 @@ function AnimalBase:getUpAfterDrink()
 end
 
 function AnimalBase:stopDrinking()
+    if self.dead then return end
     self.collider:setLinearVelocity(0, 0)
     self.activity = "idle"
     self.targetGoal = "none"
@@ -401,22 +441,46 @@ end
 
 function AnimalBase:reproduction()
     local closest = self:searchForMate()
-    if closest then
+    if closest and self.genes.attractiveness > math.random() then
         local obj = closest:getObject()
         obj.reproductiveUrge = obj.reproductiveUrge
-    end
-    for _=1, lume.random(1, self.maxBabies) do
-        for _=1, 5 do
-            local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
-            if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
-                table.insert(animals, animalClasses[self.animalType](pos.x, pos.y))
-                break
+
+        local genes = {}
+        for k, v in pairs(self.genes) do
+            if math.random() >= 0.5 then
+                genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
             end
+        end
+        for k, v in pairs(obj.genes) do
+            if not genes[k] then
+                genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
+            end
+        end
+
+        if self.sex == "female" then
+            self.timers.gestation:after(self.gestationTime, self.giveBirth, self)
+            self.childGenes = genes
+        else
+            obj.timers.gestation:after(obj.gestationTime, obj.giveBirth, obj)
+            obj.childGenes = genes
         end
     end
     self.reproductiveUrge = self.reproductiveUrgeMax
     self.activity = "idle"
     self.targetGoal = "none"
+end
+
+function AnimalBase:giveBirth()
+    if self.dead then return end
+    for _=1, lume.random(1, self.maxBabies) do
+        for _=1, 5 do
+            local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
+            if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
+                table.insert(animals, animalClasses[self.animalType](pos.x, pos.y, self.childGenes))
+                break
+            end
+        end
+    end
 end
 
 function AnimalBase:searchForWater()

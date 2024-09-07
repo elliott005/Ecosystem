@@ -5,6 +5,7 @@ Controls:
   <li>left click + move mouse: move camera;</li>
   <li>right click: select animal; </li>
   <li>scroll wheel: zoom in/out; </li>
-  <li>middle mouse button: toggle debug mode</li>
+  <li>middle mouse button: toggle debug mode;</li>
+  <li>left/right arrow: slow down/speed up game;</li>
 </ul>
 If an update to this repo does not seem to change anything, try to clear your browser cache, as this can overwrite the new version with an old one.

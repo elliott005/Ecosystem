@@ -3,10 +3,10 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "base_smaller.tmx",
+    "activeFile": "base_medium.tmx",
     "expandedProjectPaths": [
-        "Templates",
         "Tilesets",
+        "Templates",
         "."
     ],
     "fileStates": {
@@ -42,8 +42,8 @@
             "scale": 0.75,
             "selectedLayer": 3,
             "viewCenter": {
-                "x": 603.3333333333334,
-                "y": 405.33333333333326
+                "x": 559.3333333333333,
+                "y": 478.66666666666663
             }
         },
         "base.tmx#Grass": {
@@ -54,6 +54,23 @@
             "scaleInDock": 1
         },
         "base.tmx#Water+": {
+            "scaleInDock": 1
+        },
+        "base_medium.tmx": {
+            "scale": 0.9991964285714285,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 559.9499597891163,
+                "y": 480.3860244839604
+            }
+        },
+        "base_medium.tmx#Grass": {
+            "scaleInDock": 1
+        },
+        "base_medium.tmx#Hills": {
+            "scaleInDock": 1
+        },
+        "base_medium.tmx#Water+": {
             "scaleInDock": 1
         },
         "base_smaller.tmx": {
@@ -84,12 +101,14 @@
     "map.tileWidth": 16,
     "openFiles": [
         "base.tmx",
-        "base_smaller.tmx"
+        "base_smaller.tmx",
+        "base_medium.tmx"
     ],
     "project": "Ecosystem.tiled-project",
     "recentFiles": [
         "base.tmx",
         "base_smaller.tmx",
+        "base_medium.tmx",
         "Tilesets/Grass.tsx",
         "Tilesets/Water+.tsx",
         "Tilesets/Water.tsx",

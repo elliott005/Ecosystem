@@ -9,25 +9,26 @@ function game:enter()
         table.insert(animalTypes, v:sub(1, -5))
     end
     lume.remove(animalTypes, "AnimalBase")
+    lume.remove(animalTypes, "Cat")
 
     require "src/levels/loadMap"
-    loadMap("Tiled/Exports/base_smaller.lua")
+    loadMap("Tiled/Exports/base.lua")
 
     player = Player(0, 0)
 
     animalClasses = {
         ["Fox"] = Fox,
-        ["Cat"] = Cat,
+        --["Cat"] = Cat,
         ["Chicken"] = Chicken
     }
     animalClassesProbabilities = {
         ["Fox"] = 2,
-        ["Cat"] = 2,
+        --["Cat"] = 2,
         ["Chicken"] = 4
     }
     animals = {}
     -- world:update(0.1)
-    while #animals < 10 do
+    while #animals < 50 do
         local animalType = lume.weightedchoice(animalClassesProbabilities)
         local pos = vector(lume.random(20, gameMap.width * gameMap.tilewidth - 20), lume.random(20, gameMap.height * gameMap.tileheight - 20))
         if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
@@ -48,12 +49,54 @@ function game:enter()
 
     frameCount = 0
     FPStotal = 0
+
+    timeBetweenCaptures = 1.0
+    captureTimer = Timer.new()
+    averageGenesOverTime = {}
+    animalPopulationOverTime = {}
+    for i, v in ipairs(animalTypes) do
+        animalPopulationOverTime[v] = {}
+        averageGenesOverTime[v] = {}
+    end
+    captureGenes()
+end
+
+function captureGenes()
+    local animalsGenes = {}
+    for i, v in ipairs(animalTypes) do
+        animalsGenes[v] = {}
+    end
+    for i, v in ipairs(animals) do
+        table.insert(animalsGenes[v.animalType], v.genes)
+    end
+
+    local averageGenes = {}
+    for animalType, animalGroup in pairs(animalsGenes) do
+        averageGenes[animalType] = {}
+        table.insert(animalPopulationOverTime[animalType], #animalGroup)
+        for i, animalGenes in ipairs(animalGroup) do
+            for k, gene in pairs(animalGenes) do
+                if averageGenes[animalType][k] then
+                    averageGenes[animalType][k] = averageGenes[animalType][k] + gene / #animalGroup
+                else
+                    averageGenes[animalType][k] = gene / #animalGroup
+                end
+            end
+        end
+    end
+    for animalType, animalGroup in pairs(averageGenes) do
+        table.insert(averageGenesOverTime[animalType], animalGroup)
+    end
+    captureTimer:after(timeBetweenCaptures, captureGenes)
 end
 
 function game:update(dt)
     if profiling then
         prof.push("frame")
     end
+
+    if player.showAverageGenes then return end
+
     if profiling then
         prof.push("update")
     end
@@ -65,6 +108,8 @@ function game:update(dt)
 
     gameMap:update(dt)
     player:update(dt)
+
+    captureTimer:update(dt)
 
     if profiling then
         prof.push("animals update")
@@ -113,27 +158,31 @@ function game:draw()
     end
     player.camera:attach()
 
-        gameMap:drawNoReset()
+        if not player.showAverageGenes then
+            gameMap:drawNoReset()
 
-        if profiling then
-            prof.push("draw animals")
-        end
-        for i, animal in ipairs(animals) do
-            animal:draw()
-        end
-        if profiling then
-            prof.pop("draw animals")
-        end
+            if profiling then
+                prof.push("draw animals")
+            end
+            for i, animal in ipairs(animals) do
+                animal:draw()
+            end
+            if profiling then
+                prof.pop("draw animals")
+            end
 
-        if debugMode then
-            world:draw()
+            if debugMode then
+                world:draw()
+            end
         end
 
         player:draw()
 
     player.camera:detach()
 
-    player:drawHud()
+    if not player.showAverageGenes then
+        player:drawHud()
+    end
 
     if profiling then
         prof.pop("draw")
