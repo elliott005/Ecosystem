@@ -1,7 +1,5 @@
 Cat = Class{}
 
-world:addCollisionClass("Cat")
-
 function Cat:init(x, y)
     self:include(AnimalBase)
     AnimalBase.init(self, x, y)
@@ -18,7 +16,6 @@ function Cat:init(x, y)
     self.animalType = "Cat"
     self.prey = {"Chicken"}
 
-    self:setCollision("Cat", 1/4)
     self:setVariables()
 
     self.spritesheet = spritesheets[self.animalType]

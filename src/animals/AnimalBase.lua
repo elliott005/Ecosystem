@@ -35,7 +35,8 @@ function AnimalBase:init(x, y, baby)
 
     self.mutationAmount = 0.5
 
-    self.id = #animals + 1
+    self.group = vector(math.ceil(self.position.x / gameMap.tilewidth / groupSize), math.ceil(self.position.y / gameMap.tileheight/ groupSize))
+    self.id = #animals[self.group.x][self.group.y] + 1
 
     self.reproductiveUrgeThreshold = self.reproductiveUrgeMax / 4
 
@@ -85,7 +86,7 @@ function AnimalBase:update(dt)
         if profiling and self.id == 1 then
             prof.push("activity update")
         end
-        self.activities[self.activity](self)
+        self.activities[self.activity](self, dt)
         if profiling and self.id == 1 then
             prof.pop("activity update")
         end
@@ -124,28 +125,28 @@ function AnimalBase:draw()
         else
             love.graphics.draw(self.spritesheet, (self.position + vector(self.offsetX, self.offsetY)):unpack())
         end ]]
-        love.graphics.setColor(1, 1, 1, 0.5)
+        love.graphics.setColor(1, 1, 1, 0.2)
         if self.activity == "moving" or self.activity == "wandering" then
             if #self.targetSteps > 0 then
-                love.graphics.line(self.collider:getX(), self.collider:getY(), self.targetSteps[1]:unpack())
+                love.graphics.line(self.position.x, self.position.y, self.targetSteps[1]:unpack())
             else
-                love.graphics.line(self.collider:getX(), self.collider:getY(), self.target:unpack())
+                love.graphics.line(self.position.x, self.position.y, self.target:unpack())
             end
         end
-        love.graphics.circle("fill", self.collider:getX(), self.collider:getY(), self.targetReachedRadius)
-        love.graphics.setColor(0.5, 0.5, 1, 0.5)
+        love.graphics.circle("fill", self.position.x, self.position.y, self.targetReachedRadius)
+        love.graphics.setColor(0.5, 0.5, 1, 0.2)
         love.graphics.circle("fill", self.position.x, self.position.y, self.searchRadius)
     end
     love.graphics.setColor(1, 1, 1)
 end
 
-function AnimalBase:setCollision(collisionClass, sizeMultiplier)
+--[[ function AnimalBase:setCollision(collisionClass, sizeMultiplier)
     self.collider = world:newCircleCollider(self.position.x + self.size / 2, self.position.y + self.size / 2, self.size * sizeMultiplier)
     self.collider:setFixedRotation(true)
     self.collider:setCollisionClass(collisionClass)
     self.collider:setObject(self)
     self.collider:setLinearVelocity(0, 0)
-end
+end ]]
 
 function AnimalBase:setVariables(genes)
     if genes then
@@ -178,8 +179,7 @@ function AnimalBase:setVariables(genes)
 end
 
 function AnimalBase:updateStatus(dt)
-    self.position.x = self.collider:getX()
-    self.position.y = self.collider:getY()
+    self:updateGroup()
 
     self.hunger = self.hunger - dt / self.genes.speedMultiplier
     self.thirst = self.thirst - dt / self.genes.speedMultiplier
@@ -188,28 +188,38 @@ function AnimalBase:updateStatus(dt)
 
     if self.thirst < 0.0 or self.hunger < 0.0 then
         self.dead = true
-        self.collider:setLinearVelocity(0, 0)
         self.timers.death:after(1, self.die, self)
     end
 
     if self.reproductiveUrge < 0.0 then
         local closest = self:searchForMate()
-        if closest and not (self.targetGoal == "reproduction" and self.target == vector(closest:getX(), closest:getY())) then
-            self.target = vector(closest:getX(), closest:getY())
+        if closest and not (self.targetGoal == "reproduction" and self.target == closest.position) then
+            self.target = closest.position
             self.activity = "moving"
             self.targetGoal = "reproduction"
         end
     end
 end
 
+function AnimalBase:updateGroup()
+    local newGroup = vector(math.ceil(self.position.x / gameMap.tilewidth / groupSize), math.ceil(self.position.y / gameMap.tileheight / groupSize))
+    if newGroup ~= self.group then
+        lume.remove(animals[self.group.x][self.group.y], self)
+        self.group = newGroup
+        table.insert(animals[self.group.x][self.group.y], self)
+    end
+    self.id = #animals[self.group.x][self.group.y]
+end
+
 function AnimalBase:die()
     self.dead = true
-    self.collider:destroy()
-    table.remove(animals, self.id)
-    for i, animal in ipairs(animals) do
-        animal.id = i
+    self:updateGroup()
+    if player.selectedAnimal == self then
+        player.selectedAnimal = false
     end
+    lume.remove(animals[self.group.x][self.group.y], self)
 end
+
 function AnimalBase:heal()
     self.thirst = self.thirstMax
     self.hunger = self.hungerMax
@@ -218,17 +228,17 @@ end
 
 function AnimalBase:idle()
     self.animation = "idle"
-    if self.thirst < self.thirstThreshold then
+    if self.thirst < self.thirstThreshold and not (self.hunger < self.hungerThreshold and self.hunger < self.thirst) then
         local closest = self:searchForWater()
         if closest then
-            self.target = vector(closest:getX(), closest:getY())
+            self.target = closest.position
             self.activity = "moving"
             self.targetGoal = "drinking"
         else
             self.activity = "wandering"
             for _=1, 10 do
                 self.target = vector(self.position.x + lume.random(-self.wanderRadius, self.wanderRadius), self.position.y + lume.random(-self.wanderRadius, self.wanderRadius))
-                if #world:queryLine(self.position.x, self.position.y, self.target.x, self.target.y, {"All", except={self.animalType}}) < 1 then
+                if not queryLine(self.position, self.target, walls) then
                     break
                 else
                     self.target = self.position
@@ -238,14 +248,14 @@ function AnimalBase:idle()
     elseif self.hunger < self.hungerThreshold then
         local closest = self:searchForFood()
         if closest then
-            self.target = vector(closest:getX(), closest:getY())
+            self.target = closest.position
             self.activity = "moving"
             self.targetGoal = "eating"
         else
             self.activity = "wandering"
             for _=1, 10 do
                 self.target = vector(self.position.x + lume.random(-self.wanderRadius, self.wanderRadius), self.position.y + lume.random(-self.wanderRadius, self.wanderRadius))
-                if #world:queryLine(self.position.x, self.position.y, self.target.x, self.target.y, {"All", except={self.animalType}}) < 1 then
+                if not queryLine(self.position, self.target, walls) then
                     break
                 else
                     self.target = self.position
@@ -256,7 +266,7 @@ function AnimalBase:idle()
     self:searchForPredators()
 end
 
-function AnimalBase:move(switchTo)
+function AnimalBase:move(dt, switchTo)
     self.animation = "walk"
     
     if not self.checkedPath then
@@ -288,11 +298,10 @@ function AnimalBase:move(switchTo)
     if self.baby then
         speed = speed / 2
     end
-    self.collider:setLinearVelocity((dir * speed):unpack())
+    self.position = self.position + dir * speed * dt
     self.animations[self.animation].flippedH = dir.x < 0.0
     if self.position == self.target or self.position:dist(self.target) <= self.targetReachedRadius then
         self.activity = switchTo
-        self.collider:setLinearVelocity(0, 0)
     elseif self.targetGoal == "drinking" then
         if not self.checkedIfCloser then
             self.checkedIfCloser = true
@@ -302,8 +311,8 @@ function AnimalBase:move(switchTo)
                 if self.dead then return end
                 local closestWater = self:searchForWater()
                 if closestWater then
-                    if not (closestWater:getX() == self.target.x and closestWater:getY() == self.target.y) then
-                        self.target = vector(closestWater:getX(), closestWater:getY())
+                    if closestWater.position ~= self.target then
+                        self.target = closestWater.position
                     end
                 else
                     self.activity = "idle"
@@ -320,8 +329,8 @@ function AnimalBase:move(switchTo)
                 if self.dead then return end
                 local closestFood = self:searchForFood()
                 if closestFood then
-                    if not (closestFood:getX() == self.target.x and closestFood:getY() == self.target.y) then
-                        self.target = vector(closestFood:getX(), closestFood:getY())
+                    if closestFood.position ~= self.target then
+                        self.target = closestFood.position
                     end
                 else
                     self.activity = "idle"
@@ -335,25 +344,21 @@ function AnimalBase:move(switchTo)
 end
 
 function AnimalBase:checkPath()
-    local except = {}
+    local collisionWith = {water, walls}
     local colliders = {}
     if self.targetGoal == "drinking" then
-        table.insert(except, "Water")
-    elseif self.targetGoal == "eating" then
-        except = lume.concat(except, self.prey)
-    elseif self.targetGoal == "reproduction" then
-        table.insert(except, self.animalType)
+        lume.remove(collisionWith, water)
     end
     if #self.targetSteps > 0 and (self.targetSteps[1] == self.position or self.position:dist(self.targetSteps[1]) < self.targetReachedRadius) then
         self.targetSteps[1] = nil
     else
         if #self.targetSteps > 0 then
-            colliders = world:queryLine(self.position.x, self.position.y, self.targetSteps[1].x, self.targetSteps[1].y, {"All", except=except})
+            colliders = queryLine(self.position, self.targetSteps[1], unpack(collisionWith))
         elseif self.position ~= self.target then
-            colliders = world:queryLine(self.position.x, self.position.y, self.target.x, self.target.y, {"All", except=except})
+            colliders = queryLine(self.position, self.target, unpack(collisionWith))
         end
     end
-    if #colliders > 0 and colliders[1] ~= self.collider then
+    if colliders then
         local angle = 15
         local targetStep
         while math.abs(angle) <= 180 do
@@ -362,8 +367,8 @@ function AnimalBase:checkPath()
             else
                 targetStep = (self.target - self.position):rotated(angle)
             end
-            colliders = world:queryLine(self.position.x, self.position.y, targetStep.x, targetStep.y, {"All", except=except})
-            if #colliders < 1 then
+            colliders = queryLine(self.position, targetStep, unpack(collisionWith))
+            if not colliders then
                 break
             end
             targetStep = vector(0, 0)
@@ -377,23 +382,23 @@ function AnimalBase:checkPath()
     end
 end
 
-function AnimalBase:moving()
-    self:move(self.targetGoal)
+function AnimalBase:moving(dt)
+    self:move(dt, self.targetGoal)
 end
 
-function AnimalBase:wandering()
-    self:move("idle")
-    if self.thirst < self.thirstThreshold then
+function AnimalBase:wandering(dt)
+    self:move(dt, "idle")
+    if self.thirst < self.thirstThreshold and not (self.hunger < self.hungerThreshold and self.hunger < self.thirst) then
         local closest = self:searchForWater()
         if closest then
-            self.target = vector(closest:getX(), closest:getY())
+            self.target = closest.position
             self.activity = "moving"
             self.targetGoal = "drinking"
         end
     elseif self.hunger < self.hungerThreshold then
         local closest = self:searchForFood()
         if closest then
-            self.target = vector(closest:getX(), closest:getY())
+            self.target = closest.position
             self.activity = "moving"
             self.targetGoal = "eating"
         end
@@ -403,7 +408,6 @@ end
 
 function AnimalBase:drinking()
     if self.animation ~= "sit" and self.animation ~= "getUp" then
-        self.collider:setLinearVelocity(0, 0)
         self.animation = "sit"
         self.timers.drink:after(self.animations[self.animation].totalDuration, self.getUpAfterDrink, self)
     end
@@ -412,14 +416,12 @@ end
 function AnimalBase:getUpAfterDrink()
     if self.dead then return end
     self.thirst = self.thirstMax
-    self.collider:setLinearVelocity(0, 0)
     self.animation = "getUp"
     self.timers.drink:after(self.animations[self.animation].totalDuration, self.stopDrinking, self)
 end
 
 function AnimalBase:stopDrinking()
     if self.dead then return end
-    self.collider:setLinearVelocity(0, 0)
     self.activity = "idle"
     self.targetGoal = "none"
 end
@@ -427,9 +429,8 @@ end
 function AnimalBase:eating()
     local closest = self:searchForFood()
     if closest then
-        local obj = closest:getObject()
-        if obj then
-            obj:die()
+        if closest.animalType then
+            closest:die()
         --[[ else
             closest:destroy() ]]
         end
@@ -442,8 +443,7 @@ end
 function AnimalBase:reproduction()
     local closest = self:searchForMate()
     if closest and self.genes.attractiveness > math.random() then
-        local obj = closest:getObject()
-        obj.reproductiveUrge = obj.reproductiveUrge
+        closest.reproductiveUrge = closest.reproductiveUrge
 
         local genes = {}
         for k, v in pairs(self.genes) do
@@ -452,7 +452,7 @@ function AnimalBase:reproduction()
             end
         end
         genes["attractiveness"] = self.genes.attractiveness
-        for k, v in pairs(obj.genes) do
+        for k, v in pairs(closest.genes) do
             if not genes[k] then
                 genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
             end
@@ -462,8 +462,8 @@ function AnimalBase:reproduction()
             self.timers.gestation:after(self.gestationTime, self.giveBirth, self)
             self.childGenes = genes
         else
-            obj.timers.gestation:after(obj.gestationTime, obj.giveBirth, obj)
-            obj.childGenes = genes
+            closest.timers.gestation:after(closest.gestationTime, closest.giveBirth, closest)
+            closest.childGenes = genes
         end
     end
     self.reproductiveUrge = self.reproductiveUrgeMax
@@ -476,8 +476,9 @@ function AnimalBase:giveBirth()
     for _=1, lume.random(1, self.maxBabies) do
         for _=1, 5 do
             local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
-            if #world:queryCircleArea(pos.x, pos.y, 16, {"All"}) < 1 then
-                table.insert(animals, animalClasses[self.animalType](pos.x, pos.y, self.childGenes, true))
+            if #queryCircle(pos, 16, walls, water) < 1 then
+                local group = vector(math.ceil(pos.x / gameMap.tilewidth / groupSize), math.ceil(pos.y / gameMap.tileheight/ groupSize))
+                table.insert(animals[group.x][group.y], animalClasses[self.animalType](pos.x, pos.y, self.childGenes, true))
                 break
             end
         end
@@ -485,16 +486,14 @@ function AnimalBase:giveBirth()
 end
 
 function AnimalBase:searchForWater()
-    local waterColliders = world:queryCircleArea(self.position.x, self.position.y, self.searchRadius, {"Water"})
+    local waterColliders = queryCircle(self.position, self.searchRadius, water)
     local closest = false
     local closestDistance = 0
     for i, waterCollider in ipairs(waterColliders) do
-        local waterX = waterCollider:getX()
-        local waterY = waterCollider:getY()
-        if (not closest) or lume.distance(self.position.x, self.position.y, waterX, waterY) < closestDistance then
-            if #world:queryLine(self.position.x, self.position.y, waterX, waterY, {"BlocksLOS"}) < 1 then
+        if (not closest) or lume.distance(self.position.x, self.position.y, waterCollider.position.x, waterCollider.position.y) < closestDistance then
+            if not queryLine(self.position, waterCollider.position, walls) then
                 closest = waterCollider
-                closestDistance = lume.distance(self.position.x, self.position.y, waterX, waterY)
+                closestDistance = self.position:dist(waterCollider.position)
             end
         end
     end
@@ -502,16 +501,26 @@ function AnimalBase:searchForWater()
 end
 
 function AnimalBase:searchForFood()
-    local foodColliders = world:queryCircleArea(self.position.x, self.position.y, self.searchRadius, self.prey)
+    local foodColliders = {}
     local closest = false
     local closestDistance = 0
+    if lume.find(self.prey, "Grass") then
+        foodColliders = queryCircle(self.position, self.searchRadius, grass)
+        for i, foodCollider in ipairs(foodColliders) do
+            if (not closest) or self.position:dist(foodCollider.position) < closestDistance then
+                if not queryLine(self.position, foodCollider.position, walls) then
+                    closest = foodCollider
+                    closestDistance = self.position:dist(foodCollider.position)
+                end
+            end
+        end
+    end
+    foodColliders = queryCircle(self.position, self.searchRadius, animals)
     for i, foodCollider in ipairs(foodColliders) do
-        local foodX = foodCollider:getX()
-        local foodY = foodCollider:getY()
-        if (not closest) or lume.distance(self.position.x, self.position.y, foodX, foodY) < closestDistance then
-            if #world:queryLine(self.position.x, self.position.y, foodX, foodY, {"BlocksLOS"}) < 1 then
+        if lume.find(self.prey, foodCollider.animalType) and ((not closest) or self.position:dist(foodCollider.position) < closestDistance) then
+            if not queryLine(self.position, foodCollider.position, walls) then
                 closest = foodCollider
-                closestDistance = lume.distance(self.position.x, self.position.y, foodX, foodY)
+                closestDistance = self.position:dist(foodCollider.position)
             end
         end
     end
@@ -519,17 +528,14 @@ function AnimalBase:searchForFood()
 end
 
 function AnimalBase:searchForMate()
-    local mateColliders = world:queryCircleArea(self.position.x, self.position.y, self.searchRadius, {self.animalType})
+    local mates = queryCircle(self.position, self.searchRadius, animals)
     local closest = false
     local closestDistance = 0
-    for i, mateCollider in ipairs(mateColliders) do
-        local mateX = mateCollider:getX()
-        local mateY = mateCollider:getY()
-        local mateObj = mateCollider:getObject()
-        if mateObj.reproductiveUrge < mateObj.reproductiveUrgeThreshold and mateObj.sex ~= self.sex and ((not closest) or lume.distance(self.position.x, self.position.y, mateX, mateY) < closestDistance) then
-            if #world:queryLine(self.position.x, self.position.y, mateX, mateY, {"BlocksLOS"}) < 1 then
-                closest = mateCollider
-                closestDistance = lume.distance(self.position.x, self.position.y, mateX, mateY)
+    for i, mate in ipairs(mates) do
+        if mate.reproductiveUrge < mate.reproductiveUrgeThreshold and mate.sex ~= self.sex and ((not closest) or self.position:dist(mate.position) < closestDistance) then
+            if not queryLine(self.position, mate.position, walls) then
+                closest = mate
+                closestDistance = self.position:dist(mate.position)
             end
         end
     end
@@ -539,24 +545,29 @@ end
 function AnimalBase:searchForPredators()
     if #self.predators < 1 then return end
 
-    local colliders = world:queryCircleArea(self.position.x, self.position.y, self.searchRadius, self.predators)
+    local closeAnimals = queryCircle(self.position, self.searchRadius, animals)
+    local predators = {}
+    for i, animal in ipairs(closeAnimals) do
+        if lume.find(self.predators, animal.animalType) then
+            table.insert(predators, animal)
+        end
+    end
 
-    if #colliders > 0 then
-        local predator = colliders[lume.round(lume.random(1, #colliders))]
+    if #predators > 0 then
+        local predator = predators[lume.round(lume.random(1, #predators))]
         if self.fleeingFrom then
-            local colliderIndex = lume.find(colliders, self.fleeingFrom)
+            local colliderIndex = lume.find(predators, self.fleeingFrom)
             if colliderIndex then
-                predator = colliders[colliderIndex]
+                predator = predators[colliderIndex]
             else
                 self.fleeingFrom = false
             end
         end
         self.fleeingFrom = predator
-        local predatorObj = predator:getObject()
-        if #world:queryLine(self.position.x, self.position.y, predatorObj.position.x, predatorObj.position.y, {"BlocksLOS"}) < 1 then
-            local target = (self.position - predatorObj.position):normalized() * (self.searchRadius - self.position:dist(predatorObj.position) + 32) + self.position
-            local collidersInPath = world:queryLine(self.position.x, self.position.y, target.x, target.y, {"All", except={"Grass"}})
-            if #collidersInPath < 1 or (#collidersInPath < 2 and collidersInPath[1] == self.collider) then
+        if not queryLine(self.position, predator.position, walls) then
+            local target = (self.position - predator.position):normalized() * (self.searchRadius - self.position:dist(predator.position) + 32) + self.position
+            local collidersInPath = queryLine(self.position, target, walls)
+            if not collidersInPath then
                 self.target = target
                 self.fleeing = true
                 self.activity = "moving"
@@ -564,9 +575,9 @@ function AnimalBase:searchForPredators()
             else
                 local angle = 15
                 while math.abs(angle) <= 90 do
-                    target = (self.position - predatorObj.position):rotated(angle):normalized() * (self.searchRadius - self.position:dist(predatorObj.position) + 32) + self.position
-                    collidersInPath = world:queryLine(self.position.x, self.position.y, target.x, target.y, {"All", except={"Grass"}})
-                    if #collidersInPath < 1 or (#collidersInPath < 2 and collidersInPath[1] == self.collider) then
+                    target = (self.position - predator.position):rotated(angle):normalized() * (self.searchRadius - self.position:dist(predator.position) + 32) + self.position
+                    collidersInPath = queryLine(self.position, target, walls)
+                    if not collidersInPath then
                         self.target = target
                         self.fleeing = true
                         self.activity = "moving"
@@ -583,7 +594,6 @@ function AnimalBase:searchForPredators()
         end
     else
         if self.fleeing then
-            self.collider:setLinearVelocity(0, 0)
             self.activity = "idle"
             self.targetGoal = "none"
         end

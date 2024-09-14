@@ -1,6 +1,6 @@
 Chicken = Class{}
 
-world:addCollisionClass("Chicken")
+--world:addCollisionClass("Chicken", {ignores={"Fox", "Chicken", "BlocksLOS", "Water", "Grass"}})
 
 function Chicken:init(x, y, genes, baby)
     self:include(AnimalBase)
@@ -21,7 +21,7 @@ function Chicken:init(x, y, genes, baby)
     self.prey = {"Grass"}
     self.predators = {"Fox", "Cat"}
 
-    self:setCollision("Chicken", 1/5)
+    --self:setCollision("Chicken", 1/5)
     self:setVariables(genes)
 
     self.offsetX = -8

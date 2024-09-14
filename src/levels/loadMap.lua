@@ -1,34 +1,41 @@
 walls = {}
+water = {}
+grass = {}
 
 function loadMap(mapName)
     gameMap = sti(mapName)
 
-    world:addCollisionClass("BlocksLOS")
-    loadLayer("Cliffs", "BlocksLOS")
+    groupSize = 5
+    for x=1,math.ceil(gameMap.width / groupSize) do
+        walls[x] = {}
+        water[x] = {}
+        grass[x] = {}
+        for y=1,math.ceil(gameMap.height / groupSize) do
+            walls[x][y] = {}
+            water[x][y] = {}
+            grass[x][y] = {}
+        end
+    end
 
-    world:addCollisionClass("Water")
-    loadLayer("Water")
+    --world:addCollisionClass("BlocksLOS", {ignores={"Fox", "Chicken", "BlocksLOS", "Water", "Grass"}})
+    loadLayer("Cliffs", walls)
 
-    world:addCollisionClass("Grass", {ignores=animalTypes}) -- ignores=animalTypes
-    loadLayer("Grass")
+    --world:addCollisionClass("Water", {ignores={"Fox", "Chicken", "BlocksLOS", "Water", "Grass"}})
+    loadLayer("Water", water)
+
+    --world:addCollisionClass("Grass", {ignores=animalTypes}) -- ignores=animalTypes
+    loadLayer("Grass", grass)
 end
 
-function loadLayer(name, collisionClass)
-    collisionClass = collisionClass or name
+function loadLayer(name, group)
     if gameMap.layers[name] then
         for y, row in pairs(gameMap.layers[name].data) do
             for x, tile in pairs(row) do
                 for i, collision in ipairs(tile.objectGroup.objects) do
-                    spawnWall((x - 1) * gameMap.tilewidth + collision.x, (y - 1) * gameMap.tileheight + collision.y, collision.width, collision.height)
-                    walls[#walls]:setCollisionClass(collisionClass)
+                    local circle = {position=vector((x - 1) * gameMap.tilewidth + collision.x, (y - 1) * gameMap.tileheight + collision.y), radius=collision.width}
+                    table.insert(group[math.ceil(x / groupSize)][math.ceil(y / groupSize)], circle)
                 end
             end
         end
     end
-end
-
-function spawnWall(x, y, width, height)
-    local wall = world:newRectangleCollider(x, y, width, height)
-    wall:setType("static")
-    table.insert(walls, wall)
 end

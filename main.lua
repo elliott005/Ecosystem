@@ -7,7 +7,7 @@ function love.load()
         PROF_CAPTURE = true
         prof = require("jprof")
     end
-    
+        
     require "src/startup/gameStart"
     gameStart()
 end

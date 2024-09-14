@@ -3,6 +3,7 @@ Player = Class{}
 function Player:init(x, y)
     self.camera = Camera(x, y)
     self.selectedAnimal = false
+    self.selectedAnimalGroup = vector(0, 0)
 
     self.gameSpeedFactor = 1
 
@@ -20,11 +21,7 @@ end
 
 function Player:update(dt)
     if self.selectedAnimal then
-        if not lume.find(animals, self.selectedAnimal) then
-            self.selectedAnimal = false
-        else
-            self.camera:lookAt(self.selectedAnimal.position.x, self.selectedAnimal.position.y)
-        end
+        self.camera:lookAt(self.selectedAnimal.position.x, self.selectedAnimal.position.y)
     end
 end
 
@@ -61,15 +58,22 @@ function Player:drawHud()
         love.graphics.print("fleeing: " .. tostring(self.selectedAnimal.fleeing), 0, 192, 0, 2, 2)
         love.graphics.print("species: " .. self.selectedAnimal.animalType, 0, 224, 0, 2, 2)
         love.graphics.print("sex: " .. self.selectedAnimal.sex, 0, 256, 0, 2, 2)
+        love.graphics.print("group: " .. tostring(self.selectedAnimal.group), 0, 288, 0, 2, 2)
         if debugMode then
-            love.graphics.print("debug message: " .. self.selectedAnimal.debugMessage, 0, 288, 0, 2, 2)
+            love.graphics.print("debug message: " .. self.selectedAnimal.debugMessage, 0, 320, 0, 2, 2)
         end
     end
 
     width, height, flags = love.window.getMode()
     love.graphics.print("FPS: " .. love.timer.getFPS(), width - 300, 0, 0, 2, 2)
     love.graphics.print("game speed: " .. (self.gameSpeedFactor * 100) .. "%", width - 300, 32, 0, 2, 2)
-    love.graphics.print("animal count: " .. #animals, width - 300, 64, 0, 2, 2)
+    local animalCount = 0
+    for x, column in ipairs(animals) do
+        for y, group in ipairs(column) do
+            animalCount = animalCount + #group
+        end
+    end
+    love.graphics.print("animal count: " .. animalCount, width - 300, 64, 0, 2, 2)
 
     for i, button in ipairs(self.buttons) do
         if not (not self.selectedAnimal and button.animal) then
@@ -123,14 +127,14 @@ function Player:mousepressed(x, y, button, istouch, presses)
     elseif button == 2 then
         worldX, worldY = self.camera:worldCoords(x, y)
         -- Modify windfield to detect circles with queries
-        local colliders = world:queryCircleArea(worldX, worldY, 10, animalTypes)
+        local colliders = queryCircle(vector(worldX, worldY), 10, animals)
         local closest = false
         local closestDistance = false
         for i, collider in ipairs(colliders) do
-            local dist = lume.distance(collider:getX(), collider:getY(), worldX, worldY)
+            local dist = lume.distance(collider.position.x, collider.position.y, worldX, worldY)
             if (not closest) or dist < closestDistance then
                 closestDistance = dist
-                closest = collider:getObject()
+                closest = collider
             end
         end
         self.selectedAnimal = closest

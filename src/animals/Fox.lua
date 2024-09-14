@@ -1,6 +1,6 @@
 Fox = Class{}
 
-world:addCollisionClass("Fox")
+--world:addCollisionClass("Fox", {ignores={"Fox", "Chicken", "BlocksLOS", "Water", "Grass"}})
 
 function Fox:init(x, y)
     self:include(AnimalBase)
@@ -18,7 +18,7 @@ function Fox:init(x, y)
     self.animalType = "Fox"
     self.prey = {"Chicken"}
 
-    self:setCollision("Fox", 1/4)
+    --self:setCollision("Fox", 1/4)
     self:setVariables()
 
     self.spritesheet = spritesheets[self.animalType]
