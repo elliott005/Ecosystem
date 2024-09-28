@@ -91,6 +91,10 @@ function Player:keypressed(key, scancode, isrepeat)
         self.gameSpeedFactor = math.max(self.gameSpeedFactor - 0.1, 0)
     elseif key == "right" then
         self.gameSpeedFactor = self.gameSpeedFactor + 0.1
+    elseif key == "up" then
+        self.gameSpeedFactor = self.gameSpeedFactor + 1
+    elseif key == "down" then
+        self.gameSpeedFactor = math.max(self.gameSpeedFactor - 1, 0)
     elseif key == "space" then
         self.showAverageGenes = not self.showAverageGenes
         if self.showAverageGenes then
