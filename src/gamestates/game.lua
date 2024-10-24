@@ -204,10 +204,10 @@ function game:draw()
 
         if not player.showAverageGenes then
             if randomMap then
-                love.graphics.setBlendMode("multiply", "premultiplied")
+                --love.graphics.setBlendMode("multiply", "premultiplied")
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.draw(mapCanvas, 0, 0)
-                love.graphics.setBlendMode("alpha")
+                --love.graphics.setBlendMode("alpha")
             else
                 gameMap:drawNoReset()
             end

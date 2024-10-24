@@ -22,7 +22,7 @@ function AnimalBase:init(x, y, baby)
     self.thirstThreshold = 15.0
     self.hungerThreshold = 10.0
     self.searchRadius = 128
-    self.targetReachedRadius = 20
+    self.targetReachedRadius = 16
     self.wanderRadius = 96
     self.speed = 32
     self.animalType = "none"

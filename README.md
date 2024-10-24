@@ -1,6 +1,5 @@
-WARNING: this version is BUGGED, don's try to run it, except in your browser, because that version has not been updated. It will be fixed soon trust
-Still in VERY early stages, and toned down a bit to perform better in the browser.  
-Try it out in your browser here: https://elliott005.github.io/Ecosystem/  
+Still in VERY early stages.  
+Try it out in your browser here (not the latest version): https://elliott005.github.io/Ecosystem/  
 Controls:  
 <ul>
   <li>left click + move mouse: move camera;</li>
