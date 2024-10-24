@@ -1,5 +1,5 @@
 Still in VERY early stages.  
-Try it out in your browser here (not the latest version): https://elliott005.github.io/Ecosystem/  
+Try it out in your browser here: https://elliott005.github.io/Ecosystem/  
 Controls:  
 <ul>
   <li>left click + move mouse: move camera;</li>
