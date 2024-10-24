@@ -18,7 +18,17 @@ function game:enter()
     require "src/levels/loadMap"
     local pathToMap = "Tiled/Exports/base_medium.lua"
     local numAnimals = 30
-    loadMap(pathToMap)
+    if randomMap then
+        mapWidth = 50
+        mapHeight = 50
+        tilesize = 16
+        createMap(mapWidth, mapHeight, tilesize)
+    else
+        loadMap(pathToMap)
+        mapWidth = gameMap.width
+        mapHeight = gameMap.height
+        tilesize = gameMap.tilewidth
+    end
 
     player = Player(0, 0)
 
@@ -39,9 +49,10 @@ function game:enter()
         animalClassesProbabilities[v] = nil
     end
     animals = {}
-    for x=1,math.ceil(gameMap.width / groupSize) do
+    
+    for x=1,math.ceil(mapWidth / groupSize) do
         animals[x] = {}
-        for y=1,math.ceil(gameMap.height / groupSize) do
+        for y=1,math.ceil(mapHeight / groupSize) do
             animals[x][y] = {}
         end
     end
@@ -51,10 +62,10 @@ function game:enter()
     local animalCount = 0
     while animalCount < numAnimals do
         local animalType = lume.weightedchoice(animalClassesProbabilities)
-        local pos = vector(lume.random(20, gameMap.width * gameMap.tilewidth - 20), lume.random(20, gameMap.height * gameMap.tileheight - 20))
+        local pos = vector(lume.random(20, (mapWidth - 1) * tilesize - 20), lume.random(20, (mapHeight - 1) * tilesize - 20))
         if #queryCircle(pos, 16, walls, water) < 1 then
-            local groupPosX = math.ceil(pos.x / gameMap.tilewidth / groupSize)
-            local groupPosY = math.ceil(pos.y / gameMap.tileheight / groupSize)
+            local groupPosX = math.ceil(pos.x / tilesize / groupSize)
+            local groupPosY = math.ceil(pos.y / tilesize / groupSize)
             table.insert(animals[groupPosX][groupPosY], animalClasses[animalType](pos.x, pos.y))
             animalCount = animalCount + 1
         end
@@ -138,7 +149,9 @@ function game:update(dt)
 
     dt = dt * player.gameSpeedFactor
 
-    gameMap:update(dt)
+    if not randomMap then
+        gameMap:update(dt)
+    end
     player:update(dt)
 
     captureTimer:update(dt)
@@ -155,13 +168,7 @@ function game:update(dt)
     for x, column in ipairs(animals) do
         for y, group in ipairs(column) do
             for i, animal in ipairs(group) do
-                if profiling and i == 1 then
-                    prof.push("animal 1 update")
-                end
                 animal:update(dt)
-                if profiling and i == 1 then
-                    prof.pop("animal 1 update")
-                end
             end
         end
     end
@@ -196,16 +203,23 @@ function game:draw()
     player.camera:attach()
 
         if not player.showAverageGenes then
-            gameMap:drawNoReset()
+            if randomMap then
+                love.graphics.setBlendMode("multiply", "premultiplied")
+                love.graphics.setColor(1, 1, 1, 1)
+                love.graphics.draw(mapCanvas, 0, 0)
+                love.graphics.setBlendMode("alpha")
+            else
+                gameMap:drawNoReset()
+            end
 
             if debugMode then
                 love.graphics.setColor(1, 0, 0)
                 love.graphics.setLineWidth(4)
-                for x=1,math.ceil(gameMap.width / groupSize) do
-                    love.graphics.line((x - 1) * gameMap.tilewidth * groupSize, 0, (x - 1) * gameMap.tilewidth * groupSize, gameMap.height * gameMap.tileheight)
+                for x=1,math.ceil(mapWidth / groupSize) + 1 do
+                    love.graphics.line((x - 1) * tilesize * groupSize, 0, (x - 1) * tilesize * groupSize, mapHeight * tilesize)
                 end
-                for y=1,math.ceil(gameMap.height / groupSize) do
-                    love.graphics.line(0, (y - 1) * gameMap.tileheight * groupSize, gameMap.width * gameMap.tilewidth, (y - 1) * gameMap.tileheight * groupSize)
+                for y=1,math.ceil(mapHeight / groupSize) + 1 do
+                    love.graphics.line(0, (y - 1) * tilesize * groupSize, mapHeight * tilesize, (y - 1) * tilesize * groupSize)
                 end
                 love.graphics.setColor(1, 1, 1)
                 love.graphics.setLineWidth(1)
@@ -263,23 +277,23 @@ function game:wheelmoved(x, y)
 end
 
 function game:quit()
-    print(lume.round(FPStotal / frameCount, 0.01))
+    --print(lume.round(FPStotal / frameCount, 0.01))
 end
 
 function queryLine(start, endPoint, ...)
     local args = {...}
     local dist = start:dist(endPoint)
-    local xStart = lume.clamp(math.ceil(start.x / gameMap.tilewidth / groupSize) - 1, 1, gameMap.width / groupSize)
-    local xEnd = lume.clamp(math.ceil(endPoint.x / gameMap.tilewidth / groupSize) + 1, 1, gameMap.width / groupSize)
+    local xStart = lume.clamp(math.ceil(start.x / tilesize / groupSize) - 1, 1, mapWidth / groupSize)
+    local xEnd = lume.clamp(math.ceil(endPoint.x / tilesize / groupSize) + 1, 1, mapWidth / groupSize)
     if start.x > endPoint.x then
-        xStart = lume.clamp(math.ceil(endPoint.x / gameMap.tilewidth / groupSize) - 1, 1, gameMap.width / groupSize)
-        xEnd = lume.clamp(math.ceil(start.x / gameMap.tilewidth / groupSize) + 1, 1, gameMap.width / groupSize)
+        xStart = lume.clamp(math.ceil(endPoint.x / tilesize / groupSize) - 1, 1, mapWidth / groupSize)
+        xEnd = lume.clamp(math.ceil(start.x / tilesize / groupSize) + 1, 1, mapWidth / groupSize)
     end
-    local yStart = lume.clamp(math.ceil(start.y / gameMap.tileheight / groupSize) - 1, 1, gameMap.height / groupSize)
-    local yEnd = lume.clamp(math.ceil(endPoint.y / gameMap.tileheight / groupSize) + 1, 1, gameMap.height / groupSize)
+    local yStart = lume.clamp(math.ceil(start.y / tilesize / groupSize) - 1, 1, mapHeight / groupSize)
+    local yEnd = lume.clamp(math.ceil(endPoint.y / tilesize / groupSize) + 1, 1, mapHeight / groupSize)
     if start.y > endPoint.y then
-        yStart = lume.clamp(math.ceil(endPoint.y / gameMap.tileheight / groupSize) - 1, 1, gameMap.height / groupSize)
-        yEnd = lume.clamp(math.ceil(start.y / gameMap.tileheight / groupSize) + 1, 1, gameMap.height / groupSize)
+        yStart = lume.clamp(math.ceil(endPoint.y / tilesize / groupSize) - 1, 1, mapHeight / groupSize)
+        yEnd = lume.clamp(math.ceil(start.y / tilesize / groupSize) + 1, 1, mapHeight / groupSize)
     end
 
     local endPointNormalized = (endPoint - start):normalized()
@@ -308,10 +322,10 @@ end
 
 function queryCircle(center, radius, ...)
     local args = {...}
-    local xStart = lume.clamp(math.ceil((center.x - radius) / gameMap.tilewidth / groupSize) - 1, 1, gameMap.width / groupSize)
-    local xEnd = lume.clamp(math.ceil((center.x + radius) / gameMap.tilewidth / groupSize) + 1, 1, gameMap.width / groupSize)
-    local yStart = lume.clamp(math.ceil((center.y - radius) / gameMap.tileheight / groupSize) - 1, 1, gameMap.height / groupSize)
-    local yEnd = lume.clamp(math.ceil((center.y + radius) / gameMap.tileheight / groupSize) + 1, 1, gameMap.height / groupSize)
+    local xStart = lume.clamp(math.ceil((center.x - radius) / tilesize / groupSize) - 1, 1, mapWidth / groupSize)
+    local xEnd = lume.clamp(math.ceil((center.x + radius) / tilesize / groupSize) + 1, 1, mapWidth / groupSize)
+    local yStart = lume.clamp(math.ceil((center.y - radius) / tilesize / groupSize) - 1, 1, mapHeight / groupSize)
+    local yEnd = lume.clamp(math.ceil((center.y + radius) / tilesize / groupSize) + 1, 1, mapHeight / groupSize)
     local colliders = {}
     for x=xStart,xEnd do
         for y=yStart,yEnd do

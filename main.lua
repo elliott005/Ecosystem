@@ -1,6 +1,7 @@
 function love.load()
     debugMode = false
     profiling = false
+    randomMap = true
     love.window.setMode(800, 600)
 
     if profiling then

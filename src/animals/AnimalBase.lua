@@ -35,7 +35,7 @@ function AnimalBase:init(x, y, baby)
 
     self.mutationAmount = 0.5
 
-    self.group = vector(math.ceil(self.position.x / gameMap.tilewidth / groupSize), math.ceil(self.position.y / gameMap.tileheight/ groupSize))
+    self.group = vector(math.ceil(self.position.x / tilesize / groupSize), math.ceil(self.position.y / tilesize / groupSize))
     self.id = #animals[self.group.x][self.group.y] + 1
 
     self.reproductiveUrgeThreshold = self.reproductiveUrgeMax / 4
@@ -99,13 +99,7 @@ function AnimalBase:update(dt)
             prof.pop("animation update")
         end
         
-        if profiling and self.id == 1 then
-            prof.push("status update")
-        end
         self:updateStatus(dt)
-        if profiling and self.id == 1 then
-            prof.pop("status update")
-        end
     end
 end
 
@@ -202,7 +196,7 @@ function AnimalBase:updateStatus(dt)
 end
 
 function AnimalBase:updateGroup()
-    local newGroup = vector(math.ceil(self.position.x / gameMap.tilewidth / groupSize), math.ceil(self.position.y / gameMap.tileheight / groupSize))
+    local newGroup = vector(math.ceil(self.position.x / tilesize / groupSize), math.ceil(self.position.y / tilesize / groupSize))
     if newGroup ~= self.group then
         lume.remove(animals[self.group.x][self.group.y], self)
         self.group = newGroup
@@ -299,6 +293,8 @@ function AnimalBase:move(dt, switchTo)
         speed = speed / 2
     end
     self.position = self.position + dir * speed * dt
+    self.position.x = lume.clamp(self.position.x, tilesize, (mapWidth - 1) * tilesize)
+    self.position.y = lume.clamp(self.position.y, tilesize, (mapHeight - 1) * tilesize)
     self.animations[self.animation].flippedH = dir.x < 0.0
     if self.position == self.target or self.position:dist(self.target) <= self.targetReachedRadius then
         self.activity = switchTo
@@ -476,8 +472,10 @@ function AnimalBase:giveBirth()
     for _=1, lume.random(1, self.maxBabies) do
         for _=1, 5 do
             local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
+            pos.x = lume.clamp(pos.x, 0, (mapWidth - 1) * tilesize)
+            pos.y = lume.clamp(pos.y, 0, (mapHeight - 1) * tilesize)
             if #queryCircle(pos, 16, walls, water) < 1 then
-                local group = vector(math.ceil(pos.x / gameMap.tilewidth / groupSize), math.ceil(pos.y / gameMap.tileheight/ groupSize))
+                local group = vector(math.ceil(pos.x / tilesize / groupSize), math.ceil(pos.y / tilesize / groupSize))
                 table.insert(animals[group.x][group.y], animalClasses[self.animalType](pos.x, pos.y, self.childGenes, true))
                 break
             end
