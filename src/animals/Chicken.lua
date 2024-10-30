@@ -34,7 +34,7 @@ function Chicken:init(x, y, genes, baby)
     self.animations = {
         ["idle"] = anim8.newAnimation(grid(1, 4), 0.1),
         ["walk"] = anim8.newAnimation(grid("1-4", 8), 0.2),
-        ["sit"] = anim8.newAnimation(grid("1-3", 7), 0.3),
+        ["sit"] = anim8.newAnimation(grid("1-3", 4), 0.3),
         ["getUp"] = anim8.newAnimation(grid("3-1", 4), 0.3),
     }
 end

@@ -177,7 +177,9 @@ function AnimalBase:updateStatus(dt)
 
     self.hunger = self.hunger - dt / self.genes.speedMultiplier
     self.thirst = self.thirst - dt / self.genes.speedMultiplier
-    self.reproductiveUrge = self.reproductiveUrge - dt
+    if not self.baby then
+        self.reproductiveUrge = self.reproductiveUrge - dt
+    end
     -- print(self.thirst)
 
     if self.thirst < 0.0 or self.hunger < 0.0 then
@@ -196,7 +198,7 @@ function AnimalBase:updateStatus(dt)
 end
 
 function AnimalBase:updateGroup()
-    local newGroup = vector(math.ceil(self.position.x / tilesize / groupSize), math.ceil(self.position.y / tilesize / groupSize))
+    local newGroup = vector(math.max(1, math.ceil(self.position.x / tilesize / groupSize)), math.max(1, math.ceil(self.position.y / tilesize / groupSize)))
     if newGroup ~= self.group then
         lume.remove(animals[self.group.x][self.group.y], self)
         self.group = newGroup
@@ -232,6 +234,8 @@ function AnimalBase:idle()
             self.activity = "wandering"
             for _=1, 10 do
                 self.target = vector(self.position.x + lume.random(-self.wanderRadius, self.wanderRadius), self.position.y + lume.random(-self.wanderRadius, self.wanderRadius))
+                self.target.x = lume.clamp(self.target.x, tilesize, (mapWidth - 1) * tilesize)
+                self.target.y = lume.clamp(self.target.y, tilesize, (mapHeight - 1) * tilesize)
                 if not queryLine(self.position, self.target, walls) then
                     break
                 else
@@ -249,6 +253,8 @@ function AnimalBase:idle()
             self.activity = "wandering"
             for _=1, 10 do
                 self.target = vector(self.position.x + lume.random(-self.wanderRadius, self.wanderRadius), self.position.y + lume.random(-self.wanderRadius, self.wanderRadius))
+                self.target.x = lume.clamp(self.target.x, tilesize, (mapWidth - 1) * tilesize)
+                self.target.y = lume.clamp(self.target.y, tilesize, (mapHeight - 1) * tilesize)
                 if not queryLine(self.position, self.target, walls) then
                     break
                 else
@@ -341,7 +347,7 @@ end
 
 function AnimalBase:checkPath()
     local collisionWith = {water, walls}
-    local colliders = {}
+    local colliding = false
     if self.targetGoal == "drinking" then
         lume.remove(collisionWith, water)
     end
@@ -349,12 +355,17 @@ function AnimalBase:checkPath()
         self.targetSteps[1] = nil
     else
         if #self.targetSteps > 0 then
-            colliders = queryLine(self.position, self.targetSteps[1], unpack(collisionWith))
+            collidingTarget = queryLine(self.position, self.target, unpack(collisionWith))
+            if collidingTarget then
+                colliding = queryLine(self.position, self.targetSteps[1], unpack(collisionWith))
+            else
+                self.targetSteps = {}
+            end
         elseif self.position ~= self.target then
-            colliders = queryLine(self.position, self.target, unpack(collisionWith))
+            colliding = queryLine(self.position, self.target, unpack(collisionWith))
         end
     end
-    if colliders then
+    if colliding then
         local angle = 15
         local targetStep
         while math.abs(angle) <= 180 do
@@ -363,8 +374,8 @@ function AnimalBase:checkPath()
             else
                 targetStep = (self.target - self.position):rotated(angle)
             end
-            colliders = queryLine(self.position, targetStep, unpack(collisionWith))
-            if not colliders then
+            colliding = queryLine(self.position, self.position + targetStep, unpack(collisionWith))
+            if not colliding then
                 break
             end
             targetStep = vector(0, 0)
@@ -427,8 +438,15 @@ function AnimalBase:eating()
     if closest then
         if closest.animalType then
             closest:die()
-        --[[ else
-            closest:destroy() ]]
+        else
+            grassGroup = grass[math.max(1, math.ceil((closest.position.x / tilesize + 1) / groupSize))][math.max(1, math.ceil(closest.position.y / tilesize / groupSize))]
+            for i, grassTile in ipairs(grassGroup) do
+                if grassTile.position:dist(closest.position) < tilesize / 2 then
+                    lume.remove(grassGroup, grassTile)
+                    spawnGrass()
+                    break
+                end
+            end
         end
         self.hunger = self.hungerMax
     end
@@ -439,7 +457,6 @@ end
 function AnimalBase:reproduction()
     local closest = self:searchForMate()
     if closest and self.genes.attractiveness > math.random() then
-        closest.reproductiveUrge = closest.reproductiveUrge
 
         local genes = {}
         for k, v in pairs(self.genes) do
@@ -453,6 +470,10 @@ function AnimalBase:reproduction()
                 genes[k] = math.max(0, v + lume.random(-self.mutationAmount, self.mutationAmount))
             end
         end
+
+        closest.reproductiveUrge = closest.reproductiveUrgeMax
+        closest.activity = "idle"
+        closest.targetGoal = "none"
 
         if self.sex == "female" then
             self.timers.gestation:after(self.gestationTime, self.giveBirth, self)
@@ -472,8 +493,8 @@ function AnimalBase:giveBirth()
     for _=1, lume.random(1, self.maxBabies) do
         for _=1, 5 do
             local pos = self.position + vector(32, 0):rotated(lume.random(0, 360))
-            pos.x = lume.clamp(pos.x, 0, (mapWidth - 1) * tilesize)
-            pos.y = lume.clamp(pos.y, 0, (mapHeight - 1) * tilesize)
+            pos.x = lume.clamp(pos.x, tilesize, (mapWidth - 1) * tilesize)
+            pos.y = lume.clamp(pos.y, tilesize, (mapHeight - 1) * tilesize)
             if #queryCircle(pos, 16, walls, water) < 1 then
                 local group = vector(math.ceil(pos.x / tilesize / groupSize), math.ceil(pos.y / tilesize / groupSize))
                 table.insert(animals[group.x][group.y], animalClasses[self.animalType](pos.x, pos.y, self.childGenes, true))
@@ -513,6 +534,9 @@ function AnimalBase:searchForFood()
             end
         end
     end
+    if self.prey == {"Grass"} then
+        return closest
+    end
     foodColliders = queryCircle(self.position, self.searchRadius, animals)
     for i, foodCollider in ipairs(foodColliders) do
         if lume.find(self.prey, foodCollider.animalType) and ((not closest) or self.position:dist(foodCollider.position) < closestDistance) then
@@ -530,7 +554,7 @@ function AnimalBase:searchForMate()
     local closest = false
     local closestDistance = 0
     for i, mate in ipairs(mates) do
-        if mate.reproductiveUrge < mate.reproductiveUrgeThreshold and mate.sex ~= self.sex and ((not closest) or self.position:dist(mate.position) < closestDistance) then
+        if self.animalType == mate.animalType and mate.reproductiveUrge < mate.reproductiveUrgeThreshold and mate.sex ~= self.sex and ((not closest) or self.position:dist(mate.position) < closestDistance) then
             if not queryLine(self.position, mate.position, walls) then
                 closest = mate
                 closestDistance = self.position:dist(mate.position)

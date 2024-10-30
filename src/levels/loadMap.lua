@@ -53,9 +53,9 @@ function createMap(width, height, tilesize)
     end
 
     local assetHills = love.graphics.newImage("assets/Hills.png")
-    quadHills = love.graphics.newQuad(16, 32, 16, 16, assetHills)
-    local assetGrass = love.graphics.newImage("assets/Grass.png")
-    quadGrass = love.graphics.newQuad(0, 5 * 16, 16, 16, assetGrass)
+    local quadHills = love.graphics.newQuad(16, 32, 16, 16, assetHills)
+    assetGrass = love.graphics.newImage("assets/Grass.png")
+    local quadGrass = love.graphics.newQuad(0, 5 * 16, 16, 16, assetGrass)
     quadGrassFood = love.graphics.newQuad(6 * 16, 5 * 16, 16, 16, assetGrass)
     local assetWater = love.graphics.newImage("assets/Water+.png")
     local quadWater = love.graphics.newQuad(16, 16, 16, 16, assetWater)
@@ -92,7 +92,6 @@ function createMap(width, height, tilesize)
                 love.graphics.draw(assetGrass, quadGrass, (x - 1) * tilesize, (y - 1) * tilesize)
                 if love.math.random() < 0.05 then
                     table.insert(grass[groupX][groupY], circle)
-                    love.graphics.draw(assetGrass, quadGrassFood, (x - 1) * tilesize, (y - 1) * tilesize)
                 end
             else
                 table.insert(water[groupX][groupY], circle)

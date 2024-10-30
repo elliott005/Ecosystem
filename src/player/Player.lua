@@ -30,6 +30,12 @@ function Player:draw()
         if self.selectedAnimal.activity == "moving" or self.selectedAnimal.activity == "wandering" then
             love.graphics.setColor(1, 0, 0)
             love.graphics.line(self.selectedAnimal.position.x, self.selectedAnimal.position.y, self.selectedAnimal.target.x, self.selectedAnimal.target.y)
+            if self.selectedAnimal.targetSteps then
+                love.graphics.setColor(0, 1, 0)
+                for i, step in ipairs(self.selectedAnimal.targetSteps) do
+                    love.graphics.line(self.selectedAnimal.position.x, self.selectedAnimal.position.y, step.x, step.y)
+                end
+            end
             love.graphics.setColor(1, 1, 1)
         end
     end

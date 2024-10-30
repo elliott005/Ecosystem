@@ -17,10 +17,10 @@ function game:enter()
 
     require "src/levels/loadMap"
     local pathToMap = "Tiled/Exports/base_medium.lua"
-    local numAnimals = 30
+    local numAnimals = 50
     if randomMap then
-        mapWidth = 50
-        mapHeight = 50
+        mapWidth = 75
+        mapHeight = 75
         tilesize = 16
         createMap(mapWidth, mapHeight, tilesize)
     else
@@ -41,7 +41,7 @@ function game:enter()
         animalClasses[v] = nil
     end
     animalClassesProbabilities = {
-        ["Fox"] = 2,
+        ["Fox"] = 1,
         ["Cat"] = 2,
         ["Chicken"] = 4
     }
@@ -207,6 +207,14 @@ function game:draw()
                 --love.graphics.setBlendMode("multiply", "premultiplied")
                 love.graphics.setColor(1, 1, 1, 1)
                 love.graphics.draw(mapCanvas, 0, 0)
+
+                for x, column in ipairs(grass) do
+                    for y, group in ipairs(column) do
+                        for i, tile in ipairs(group) do
+                            love.graphics.draw(assetGrass, quadGrassFood, tile.position.x, tile.position.y)
+                        end
+                    end
+                end
                 --love.graphics.setBlendMode("alpha")
             else
                 gameMap:drawNoReset()
@@ -340,6 +348,18 @@ function queryCircle(center, radius, ...)
         end
     end
     return colliders
+end
+
+function spawnGrass()
+    for _=1,10 do
+        local pos = vector(lume.random(20, (mapWidth - 1) * tilesize - 20), lume.random(20, (mapHeight - 1) * tilesize - 20))
+        if #queryCircle(pos, tilesize, walls, water, grass) < 1 then
+            local groupPosX = math.ceil(pos.x / tilesize / groupSize)
+            local groupPosY = math.ceil(pos.y / tilesize / groupSize)
+            table.insert(grass[groupPosX][groupPosY], {position=pos, radius=tilesize})
+            break
+        end
+    end
 end
 
 return game
